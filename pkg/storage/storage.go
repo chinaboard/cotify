@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/chinaboard/cotify/pkg/model"
+	gorm_logrus "github.com/onrik/gorm-logrus"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -12,7 +13,7 @@ import (
 
 // Storage defines the interface for storage operations
 type Storage interface {
-	StoreItem(url, title, itemType, attribute string) (*model.Item, bool, error)
+	StoreItem(url, title, itemType, metadata string) (*model.Item, bool, error)
 	GetItem(url string) (*model.Item, error)
 	ListItems(itemType string, startTime, endTime *time.Time) ([]model.Item, error)
 }
@@ -24,7 +25,9 @@ type StorageService struct {
 
 // NewStorageService creates a new storage service instance
 func NewStorageService(dsn string) (Storage, error) {
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: gorm_logrus.New(),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +42,7 @@ func NewStorageService(dsn string) (Storage, error) {
 }
 
 // StoreItem stores a new item or returns existing one
-func (s *StorageService) StoreItem(url, title, itemType, attribute string) (*model.Item, bool, error) {
+func (s *StorageService) StoreItem(url, title, itemType, metadata string) (*model.Item, bool, error) {
 	var item model.Item
 	result := s.db.Where("url = ?", url).First(&item)
 
@@ -47,10 +50,10 @@ func (s *StorageService) StoreItem(url, title, itemType, attribute string) (*mod
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			// Create new item
 			newItem := &model.Item{
-				Title:     title,
-				URL:       url,
-				Type:      itemType,
-				Attribute: attribute,
+				Title:    title,
+				Url:      url,
+				Type:     itemType,
+				Metadata: metadata,
 			}
 			if err := s.db.Create(newItem).Error; err != nil {
 				return nil, false, err

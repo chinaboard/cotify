@@ -6,11 +6,11 @@ import (
 
 // Item represents a stored HTTP link with additional metadata
 type Item struct {
+	Title    string `gorm:"type:varchar(2048);not null"`
+	Url      string `gorm:"type:varchar(2048);not null;uniqueIndex"`
+	Type     string `gorm:"type:varchar(50);not null"`
+	Metadata string `gorm:"type:text"`
 	gorm.Model
-	Title     string `gorm:"type:varchar(2048);not null"`
-	URL       string `gorm:"type:varchar(2048);not null;uniqueIndex"`
-	Type      string `gorm:"type:varchar(50);not null"`
-	Attribute string `gorm:"type:text"`
 }
 
 // TableName specifies the table name for the Item model

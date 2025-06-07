@@ -20,10 +20,10 @@ func NewItemHandler(itemService *service.ItemService) *ItemHandler {
 }
 
 type StoreItemRequest struct {
-	URL       string `json:"url" binding:"required"`
-	Title     string `json:"title" binding:"required"`
-	Type      string `json:"type" binding:"required"`
-	Attribute string `json:"attribute"`
+	Url      string `json:"url" binding:"required"`
+	Title    string `json:"title" binding:"required"`
+	Type     string `json:"type" binding:"required"`
+	Metadata string `json:"metadata"`
 }
 
 type StoreItemResponse struct {
@@ -38,7 +38,7 @@ func (h *ItemHandler) StoreItem(c *gin.Context) {
 		return
 	}
 
-	item, isNew, err := h.itemService.StoreItem(req.URL, req.Title, req.Type, req.Attribute)
+	item, isNew, err := h.itemService.StoreItem(req.Url, req.Title, req.Type, req.Metadata)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
