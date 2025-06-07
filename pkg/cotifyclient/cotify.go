@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 // Client represents a cotify API client
@@ -15,6 +16,7 @@ type Client struct {
 
 // New creates a new cotify client
 func New(baseURL string) *Client {
+	baseURL = strings.TrimRight(baseURL, "/")
 	return &Client{
 		baseURL:    baseURL,
 		httpClient: &http.Client{},
