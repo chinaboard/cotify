@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+permissions: # added using https://github.com/step-security/secure-workflows
+  contents: read
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Login to ACR
+        uses: aliyun/acr-login@v1
+        with:
+          login-server: https://registry.cn-zhangjiakou.aliyuncs.com
+          region-id: cn-zhangjiakou
+          username: "${{ secrets.ACR_USERNAME }}"
+          password: "${{ secrets.ACR_PASSWORD }}"
+
+      - name: Build and push image
+        run: |
+          docker build -t ${{ secrets.IMAGE_NAME }}:latest .
+          docker push ${{ secrets.IMAGE_NAME }}:latest
