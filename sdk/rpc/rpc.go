@@ -1,4 +1,4 @@
-package cotifyclient
+package rpc
 
 import (
 	"bytes"
