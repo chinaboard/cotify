@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/chinaboard/cotify/sdk/rpc"
+	"github.com/chinaboard/cotify/sdk/httpclient"
 )
 
 func main() {
-	c := rpc.New("http://localhost:8080")
+	c := httpclient.New("http://localhost:8080")
 
-	req := rpc.CotifyItemRequest{
+	req := httpclient.CotifyItemRequest{
 		Url:      "https://example.com/video",
 		Title:    "Example Video",
 		Type:     "video",
