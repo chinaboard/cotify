@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/chinaboard/cotify/pkg/cache"
 	"github.com/chinaboard/cotify/pkg/model"
 	gorm_logrus "github.com/onrik/gorm-logrus"
 
@@ -20,7 +21,8 @@ type Storage interface {
 
 // StorageService implements the Storage interface
 type StorageService struct {
-	db *gorm.DB
+	db    *gorm.DB
+	cache *cache.MemoryCache
 }
 
 // NewStorageService creates a new storage service instance
@@ -38,11 +40,23 @@ func NewStorageService(dsn string) (Storage, error) {
 		return nil, err
 	}
 
-	return &StorageService{db: db}, nil
+	service := &StorageService{
+		db:    db,
+		cache: cache.NewMemoryCache(24 * time.Hour), // 24 hours TTL
+	}
+
+	return service, nil
 }
 
 // StoreItem stores a new item or returns existing one
 func (s *StorageService) StoreItem(url, title, itemType, metadata string) (*model.Item, bool, error) {
+	// Check cache first
+	if cachedValue, found := s.cache.Get(url); found {
+		if item, ok := cachedValue.(*model.Item); ok {
+			return item, false, nil
+		}
+	}
+
 	var item model.Item
 	result := s.db.Where("url = ?", url).First(&item)
 
@@ -58,26 +72,40 @@ func (s *StorageService) StoreItem(url, title, itemType, metadata string) (*mode
 			if err := s.db.Create(newItem).Error; err != nil {
 				return nil, false, err
 			}
+			// Cache the new item
+			s.cache.Set(url, newItem)
 			return newItem, true, nil
 		}
 		return nil, false, result.Error
 	}
 
-	// Item already exists
+	// Item already exists, cache it
+	s.cache.Set(url, &item)
 	return &item, false, nil
 }
 
 // GetItem retrieves an item by URL
 func (s *StorageService) GetItem(url string) (*model.Item, error) {
+	// Check cache first
+	if cachedValue, found := s.cache.Get(url); found {
+		if item, ok := cachedValue.(*model.Item); ok {
+			return item, nil
+		}
+	}
+
 	var item model.Item
 	result := s.db.Where("url = ?", url).First(&item)
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
+	// Cache the item
+	s.cache.Set(url, &item)
 	return &item, nil
 }
 
 // ListItems retrieves all items with optional filtering
+// Note: ListItems is not cached as it's more complex to cache filtered results
 func (s *StorageService) ListItems(itemType string, startTime, endTime *time.Time) ([]model.Item, error) {
 	var items []model.Item
 	query := s.db.Model(&model.Item{})
