@@ -22,7 +22,7 @@ type Storage interface {
 // StorageService implements the Storage interface
 type StorageService struct {
 	db    *gorm.DB
-	cache *cache.MemoryCache
+	cache *cache.MemoryCache[*model.Item]
 }
 
 // NewStorageService creates a new storage service instance
@@ -42,7 +42,7 @@ func NewStorageService(dsn string) (Storage, error) {
 
 	service := &StorageService{
 		db:    db,
-		cache: cache.NewMemoryCache(24 * time.Hour), // 24 hours TTL
+		cache: cache.NewMemoryCache[*model.Item](24 * time.Hour), // 24 hours TTL
 	}
 
 	return service, nil
@@ -51,10 +51,8 @@ func NewStorageService(dsn string) (Storage, error) {
 // StoreItem stores a new item or returns existing one
 func (s *StorageService) StoreItem(url, title, itemType, metadata string) (*model.Item, bool, error) {
 	// Check cache first
-	if cachedValue, found := s.cache.Get(url); found {
-		if item, ok := cachedValue.(*model.Item); ok {
-			return item, false, nil
-		}
+	if cachedItem, found := s.cache.Get(url); found {
+		return cachedItem, false, nil
 	}
 
 	var item model.Item
@@ -87,10 +85,8 @@ func (s *StorageService) StoreItem(url, title, itemType, metadata string) (*mode
 // GetItem retrieves an item by URL
 func (s *StorageService) GetItem(url string) (*model.Item, error) {
 	// Check cache first
-	if cachedValue, found := s.cache.Get(url); found {
-		if item, ok := cachedValue.(*model.Item); ok {
-			return item, nil
-		}
+	if cachedItem, found := s.cache.Get(url); found {
+		return cachedItem, nil
 	}
 
 	var item model.Item
