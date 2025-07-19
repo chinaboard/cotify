@@ -70,6 +70,10 @@ func (c *Client) Store(req *StoreRequest) (*StoreResponse, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusBadRequest {
+		return nil, fmt.Errorf("bad request: %s", resp.Body)
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
