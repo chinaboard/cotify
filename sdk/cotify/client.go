@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -71,7 +72,11 @@ func (c *Client) Store(req *StoreRequest) (*StoreResponse, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusBadRequest {
-		return nil, fmt.Errorf("bad request: %s", resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+		return nil, fmt.Errorf("bad request: %s", string(body))
 	}
 
 	if resp.StatusCode != http.StatusOK {
